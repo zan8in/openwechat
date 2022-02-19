@@ -162,11 +162,10 @@ func (c *Caller) WebWxGetContact(info *LoginInfo) (Members, error) {
 		}
 		seqstr := fmt.Sprintf("%d", seq)
 		resp, err := c.Client.WebWxGetContact(info, seqstr)
-		// resp, err := c.Client.WebWxGetContact(info, strconv.FormatInt(seq, 36))
 		if err != nil {
 			return nil, err
 		}
-		fmt.Println("======================", resp)
+		// fmt.Println("======================", resp)
 		defer resp.Body.Close()
 		var item WebWxContactResponse
 		if err := scanJson(resp, &item); err != nil {
@@ -175,8 +174,8 @@ func (c *Caller) WebWxGetContact(info *LoginInfo) (Members, error) {
 		if !item.BaseResponse.Ok() {
 			return nil, item.BaseResponse
 		}
-		fmt.Println("MemberCount:", item.MemberCount)
-		fmt.Println("Seq:", item.Seq)
+		// fmt.Println("MemberCount:", item.MemberCount)
+		// fmt.Println("Seq:", item.Seq)
 		seq = int64(item.Seq)
 		newMemberlist = append(newMemberlist, item.MemberList...)
 	}
