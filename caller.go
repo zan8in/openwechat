@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
 	"os"
@@ -152,19 +153,34 @@ func (c *Caller) SyncCheck(request *BaseRequest, info *LoginInfo, response *WebI
 
 // WebWxGetContact 获取所有的联系人
 func (c *Caller) WebWxGetContact(info *LoginInfo) (Members, error) {
-	resp, err := c.Client.WebWxGetContact(info)
-	if err != nil {
-		return nil, err
+	seq := int64(-1)
+	var newMemberlist Members // 存放最终的通讯录好友
+
+	for seq != 0 { //直到响应结果seq==0 结束循环
+		if seq == -1 { //  首次请求，请求参数seq初始化0
+			seq = 0
+		}
+		seqstr := fmt.Sprintf("%d", seq)
+		resp, err := c.Client.WebWxGetContact(info, seqstr)
+		// resp, err := c.Client.WebWxGetContact(info, strconv.FormatInt(seq, 36))
+		if err != nil {
+			return nil, err
+		}
+		fmt.Println("======================", resp)
+		defer resp.Body.Close()
+		var item WebWxContactResponse
+		if err := scanJson(resp, &item); err != nil {
+			return nil, err
+		}
+		if !item.BaseResponse.Ok() {
+			return nil, item.BaseResponse
+		}
+		fmt.Println("MemberCount:", item.MemberCount)
+		fmt.Println("Seq:", item.Seq)
+		seq = int64(item.Seq)
+		newMemberlist = append(newMemberlist, item.MemberList...)
 	}
-	defer resp.Body.Close()
-	var item WebWxContactResponse
-	if err := scanJson(resp, &item); err != nil {
-		return nil, err
-	}
-	if !item.BaseResponse.Ok() {
-		return nil, item.BaseResponse
-	}
-	return item.MemberList, nil
+	return newMemberlist, nil
 }
 
 // WebWxBatchGetContact 获取联系人的详情
